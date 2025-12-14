@@ -1,42 +1,86 @@
-# Noma IQ HACS integration
+# NomaIQ Home Assistant Integration
 
-## About
+Local Home Assistant custom integration for **NomaIQ / Noma Smart Home** devices that communicate through the **Ayla IoT Cloud**.
 
-This integration exposes devices from the Noma IQ app. For now, only the current devices have been tested:
+This project expands support beyond the community-maintained integration to include additional NomaIQ devices such as the **AY028MHA1 Dehumidifier**, alongside the existing **garage door opener** and **smart light switches**.
 
-- Garage Door Opener
-- Garage Door Opener's Light
+> ⚠️ This integration is unofficial and not affiliated with Noma, Ayla, or Canadian Tire.
 
-## Installation
+---
 
-Installation is done like any other Home Assistant HACS integration.
+## ✨ Features
 
-### Requirements
+### ✔ NomaIQ Dehumidifier (AY028MHA1)
+Full support for the common NomaIQ dehumidifier, including:
 
-In order to setup this integration you will need:
+- 🔌 **Power control** (On / Off)
+- 💧 **Target humidity setpoint**
+- 🌡️ **Temperature sensor**
+- 💦 **Current humidity sensor**
+- 🪣 **Bucket full sensor**
+- 💨 **Fan speed selection**
+  - Low  
+  - High
+- 🔧 **Mode selection**
+  - Auto  
+  - Continuous  
+  - Manual / Custom (if supported)
+- ⚠️ **Error reporting**
+- 🌐 **Online / offline device state**
 
-- A Home Assistant instance with [HACS](https://hacs.xyz/) installed.
+All values update using the Ayla Cloud API.
 
-### HACS Installation
+---
 
-Click the button below:
+### ✔ NomaIQ Smart Garage Door
+Supports the cloud-based NomaIQ Garage Door Controller:
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mnfjorge&repository=https%3A%2F%2Fgithub.com%2Fmnfjorge%2Fhacs-nomaiq&category=integration)
+- 🚪 Open / close control  
+- 📡 Door status sensor  
+- 📶 Signal strength and other telemetry (varies by model)
 
-Or search for "Noma IQ" in the HACS store. If you don't see it there, you can [add this repository url as a HACS custom repository](https://hacs.xyz/docs/faq/custom_repositories).
+---
 
-## Home Assistant Integration
+### ✔ NomaIQ Smart Light Switches / Plug
+Supports the basic NomaIQ lighting devices:
 
-[![Open your Home Assistant instance and start setting up a new integration of a specific brand.](https://my.home-assistant.io/badges/brand.svg)](https://my.home-assistant.io/redirect/brand/?brand=+Noma+IQ)
+- 💡 On / Off toggle  
+- 📊 Additional telemetry when exposed by Ayla
 
-After installation, setup the integration via the web UI like any other integration. When prompted, provide the following:
+---
 
-- Username: your username to log into the Noma IQ app
-- Password: your password to log into the Noma IQ app
+## 🔧 Installation
 
-### Troubleshooting
+### Manual Installation
+1. Download this repository as a ZIP.  
+2. Extract it to:
 
-If you are having issues connecting, make sure your credentials are correct using the Noma IQ in your mobile app. If you're still having trouble, you can open a new issue here: https://github.com/mnfjorge/hacs-nomaiq/issues/new
+```
+/config/custom_components/nomaiq/
+```
+
+3. Restart Home Assistant.  
+4. Add the integration through:  
+**Settings → Devices & Services → Add Integration → NomaIQ**
+
+---
+
+## 🔑 Configuration
+
+You will need:
+
+- 📧 **Email** used in the NomaIQ mobile app  
+- 🔒 **Password**  
+- Devices already registered in the official app  
+- Internet access for Ayla Cloud API communication  
+
+---
+
+## 🚧 Known Limitations
+
+- 🌐 Cloud-only (no local control).  
+- ⏱️ Polling frequency limited to avoid API rate limits.  
+- 🧪 Some devices not fully documented; testing contributions are helpful.  
 
 ## Contributions
 
