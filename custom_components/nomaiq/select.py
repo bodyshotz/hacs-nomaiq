@@ -6,7 +6,7 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN
 
@@ -45,10 +45,29 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class DehumidifierModeSelect(CoordinatorEntity, SelectEntity):
+class _NomaIQDeviceRebindSelect(CoordinatorEntity, SelectEntity):
+    """Select entity that re-binds its device reference on every coordinator update."""
+
     def __init__(self, coordinator, device):
         super().__init__(coordinator)
         self._device = device
+        self._dsn = device._dsn
+
+    def _rebind_device(self) -> None:
+        for dev in self.coordinator.data:
+            if getattr(dev, "_dsn", None) == self._dsn:
+                self._device = dev
+                return
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._rebind_device()
+        self.async_write_ha_state()
+
+
+class DehumidifierModeSelect(_NomaIQDeviceRebindSelect):
+    def __init__(self, coordinator, device):
+        super().__init__(coordinator, device)
         self._attr_name = f"{device._name} Mode"
         self._attr_unique_id = f"{device._dsn}_mode"
         self._attr_options = list(MODE_MAP.keys())
@@ -65,10 +84,9 @@ class DehumidifierModeSelect(CoordinatorEntity, SelectEntity):
             await self.coordinator.async_request_refresh()
 
 
-class DehumidifierFanSpeedSelect(CoordinatorEntity, SelectEntity):
+class DehumidifierFanSpeedSelect(_NomaIQDeviceRebindSelect):
     def __init__(self, coordinator, device):
-        super().__init__(coordinator)
-        self._device = device
+        super().__init__(coordinator, device)
         self._attr_name = f"{device._name} Fan Speed"
         self._attr_unique_id = f"{device._dsn}_fan_speed"
         self._attr_options = list(FAN_SPEED_MAP.keys())

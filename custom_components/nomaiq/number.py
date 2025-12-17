@@ -4,7 +4,7 @@ from homeassistant.components.number import NumberEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.const import PERCENTAGE
 
 from .const import DOMAIN
@@ -29,6 +29,7 @@ class TargetHumidityNumber(CoordinatorEntity, NumberEntity):
     def __init__(self, coordinator, device):
         super().__init__(coordinator)
         self._device = device
+        self._dsn = device._dsn
         self._attr_name = f"{device._name} Target Humidity"
         self._attr_unique_id = f"{device._dsn}_target_humidity"
         self._attr_native_min_value = 30
@@ -43,3 +44,13 @@ class TargetHumidityNumber(CoordinatorEntity, NumberEntity):
     async def async_set_native_value(self, value: float):
         await self._device.async_set_property_value("humidity", int(value))
         await self.coordinator.async_request_refresh()
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        # Re-bind device reference to avoid stale objects
+        for dev in self.coordinator.data:
+            if getattr(dev, "_dsn", None) == self._dsn:
+                self._device = dev
+                break
+
+        self.async_write_ha_state()
