@@ -1,12 +1,16 @@
 {
   "domain": "nomaiq",
   "name": "NomaIQ",
-  "version": "0.0.1",
-  "codeowners": ["@mnfjorge"],
+  "version": "0.2.0",
+  "codeowners": [
+    "@bodyshotz"
+  ],
   "config_flow": true,
-  "documentation": "https://github.com/mnfjorge/hacs-nomaiq",
-  "issue_tracker": "https://github.com/mnfjorge/hacs-nomaiq/issues",
+  "documentation": "https://github.com/bodyshotz/hacs-nomaiq",
+  "issue_tracker": "https://github.com/bodyshotz/hacs-nomaiq/issues",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "requirements": ["ayla_iot_unofficial==1.5.0"]
+  "requirements": [
+    "ayla_iot_unofficial==1.5.0"
+  ]
 }

@@ -7,8 +7,8 @@
           "password": "[%key:common::config_flow::data::password%]"
         },
         "data_description": {
-          "username": "The NomaIQ account's username. Most likely your e-mail address",
-          "password": "The NomaIQ account's password."
+          "username": "The NomaIQ account username, usually your email address.",
+          "password": "The NomaIQ account password."
         },
         "description": "Please enter your NomaIQ credentials.",
         "title": "NomaIQ"
@@ -19,8 +19,8 @@
           "password": "[%key:common::config_flow::data::password%]"
         },
         "data_description": {
-          "username": "The NomaIQ account's username. Most likely your e-mail address",
-          "password": "The NomaIQ account's password."
+          "username": "The NomaIQ account username, usually your email address.",
+          "password": "The NomaIQ account password."
         },
         "description": "The NomaIQ integration needs to be re-authenticated. Please update your credentials for {username}.",
         "title": "Re-authenticate NomaIQ"
@@ -32,7 +32,8 @@
       "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
-      "reauth_successful": "Re-authentication was successful."
+      "already_configured": "[%key:common::config_flow::abort::already_configured_account%]",
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
     }
   }
 }

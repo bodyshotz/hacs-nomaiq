@@ -1,6 +1,7 @@
-"""Constants for the nomaiq integration."""
+"""Constants for the NomaIQ integration."""
 
 DOMAIN = "nomaiq"
+
 CLIENT_ID = "ctc-noma-Bg-id"
 CLIENT_SECRET = "ctc-noma-WNHWBmAGLoaMl8xq8lx9XxGmiTQ"
 

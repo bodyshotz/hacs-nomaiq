@@ -3,30 +3,52 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.select import SelectEntity
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
+from .devices import is_dehumidifier, is_window_ac, property_exists
+from .entity import NomaIQEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-FAN_SPEED_MAP = {
+DEHUMIDIFIER_FAN_SPEED_MAP = {
     "Auto": "Smart",
     "Low": "Low",
     "High": "High",
 }
+DEHUMIDIFIER_AYLA_TO_HASS_FAN = {
+    value: key for key, value in DEHUMIDIFIER_FAN_SPEED_MAP.items()
+}
 
-AYLA_TO_HASS_FAN = {v: k for k, v in FAN_SPEED_MAP.items()}
-
-MODE_MAP = {
+DEHUMIDIFIER_MODE_MAP = {
     "Manual": "Normal",
     "Continuous": "Persistent",
     "Auto Dry": "Auto",
 }
+DEHUMIDIFIER_AYLA_TO_HASS_MODE = {
+    value: key for key, value in DEHUMIDIFIER_MODE_MAP.items()
+}
 
-AYLA_TO_HASS_MODE = {v: k for k, v in MODE_MAP.items()}
+WINDOW_AC_FAN_SPEED_MAP = {
+    "Low": "Low",
+    "Medium": "Med",
+    "High": "High",
+}
+WINDOW_AC_AYLA_TO_HASS_FAN = {
+    value: key for key, value in WINDOW_AC_FAN_SPEED_MAP.items()
+}
+
+WINDOW_AC_MODE_MAP = {
+    "Cool": "Cool",
+    "Eco": "Eco",
+    "Dry": "Dry",
+    "Fan": "Fan",
+}
+WINDOW_AC_AYLA_TO_HASS_MODE = {
+    value: key for key, value in WINDOW_AC_MODE_MAP.items()
+}
 
 
 async def async_setup_entry(
@@ -35,69 +57,106 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = []
+    entities: list[SelectEntity] = []
 
     for device in coordinator.data:
-        if device._device_model_number == "AY028MHA1":
-            entities.append(DehumidifierModeSelect(coordinator, device))
-            entities.append(DehumidifierFanSpeedSelect(coordinator, device))
+        if is_window_ac(device):
+            if property_exists(device, "mode"):
+                entities.append(WindowACModeSelect(coordinator, device))
+            if property_exists(device, "fan_speed"):
+                entities.append(WindowACFanSpeedSelect(coordinator, device))
+
+        elif is_dehumidifier(device):
+            if property_exists(device, "mode"):
+                entities.append(DehumidifierModeSelect(coordinator, device))
+            if property_exists(device, "fan_speed"):
+                entities.append(DehumidifierFanSpeedSelect(coordinator, device))
 
     async_add_entities(entities)
 
 
-class _NomaIQDeviceRebindSelect(CoordinatorEntity, SelectEntity):
-    """Select entity that re-binds its device reference on every coordinator update."""
-
+class DehumidifierModeSelect(NomaIQEntity, SelectEntity):
     def __init__(self, coordinator, device):
-        super().__init__(coordinator)
-        self._device = device
-        self._dsn = device._dsn
-
-    def _rebind_device(self) -> None:
-        for dev in self.coordinator.data:
-            if getattr(dev, "_dsn", None) == self._dsn:
-                self._device = dev
-                return
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        self._rebind_device()
-        self.async_write_ha_state()
-
-
-class DehumidifierModeSelect(_NomaIQDeviceRebindSelect):
-    def __init__(self, coordinator, device):
-        super().__init__(coordinator, device)
-        self._attr_name = f"{device._name} Mode"
-        self._attr_unique_id = f"{device._dsn}_mode"
-        self._attr_options = list(MODE_MAP.keys())
+        super().__init__(coordinator, device, "Mode", "mode_select")
+        self._attr_options = list(DEHUMIDIFIER_MODE_MAP.keys())
 
     @property
-    def current_option(self):
+    def current_option(self) -> str:
         raw_mode = self._device.get_property_value("mode")
-        return AYLA_TO_HASS_MODE.get(raw_mode, "Manual")
+        return DEHUMIDIFIER_AYLA_TO_HASS_MODE.get(raw_mode, "Manual")
 
-    async def async_select_option(self, option: str):
-        if option in MODE_MAP:
-            _LOGGER.debug("Setting mode to %s (%s)", option, MODE_MAP[option])
-            await self._device.async_set_property_value("mode", MODE_MAP[option])
-            await self.coordinator.async_request_refresh()
+    async def async_select_option(self, option: str) -> None:
+        if option not in DEHUMIDIFIER_MODE_MAP:
+            return
+
+        _LOGGER.debug(
+            "Setting dehumidifier mode to %s (%s)",
+            option,
+            DEHUMIDIFIER_MODE_MAP[option],
+        )
+        await self._device.async_set_property_value("mode", DEHUMIDIFIER_MODE_MAP[option])
+        await self.coordinator.async_request_refresh()
 
 
-class DehumidifierFanSpeedSelect(_NomaIQDeviceRebindSelect):
+class DehumidifierFanSpeedSelect(NomaIQEntity, SelectEntity):
     def __init__(self, coordinator, device):
-        super().__init__(coordinator, device)
-        self._attr_name = f"{device._name} Fan Speed"
-        self._attr_unique_id = f"{device._dsn}_fan_speed"
-        self._attr_options = list(FAN_SPEED_MAP.keys())
+        super().__init__(coordinator, device, "Fan Speed", "fan_speed_select")
+        self._attr_options = list(DEHUMIDIFIER_FAN_SPEED_MAP.keys())
 
     @property
-    def current_option(self):
+    def current_option(self) -> str:
         raw_speed = self._device.get_property_value("fan_speed")
-        return AYLA_TO_HASS_FAN.get(raw_speed, "Auto")
+        return DEHUMIDIFIER_AYLA_TO_HASS_FAN.get(raw_speed, "Auto")
 
-    async def async_select_option(self, option: str):
-        if option in FAN_SPEED_MAP:
-            _LOGGER.debug("Setting fan speed to %s (%s)", option, FAN_SPEED_MAP[option])
-            await self._device.async_set_property_value("fan_speed", FAN_SPEED_MAP[option])
-            await self.coordinator.async_request_refresh()
+    async def async_select_option(self, option: str) -> None:
+        if option not in DEHUMIDIFIER_FAN_SPEED_MAP:
+            return
+
+        _LOGGER.debug(
+            "Setting dehumidifier fan speed to %s (%s)",
+            option,
+            DEHUMIDIFIER_FAN_SPEED_MAP[option],
+        )
+        await self._device.async_set_property_value(
+            "fan_speed", DEHUMIDIFIER_FAN_SPEED_MAP[option]
+        )
+        await self.coordinator.async_request_refresh()
+
+
+class WindowACModeSelect(NomaIQEntity, SelectEntity):
+    def __init__(self, coordinator, device):
+        super().__init__(coordinator, device, "Mode", "mode_select")
+        self._attr_options = list(WINDOW_AC_MODE_MAP.keys())
+
+    @property
+    def current_option(self) -> str | None:
+        raw_mode = self._device.get_property_value("mode")
+        return WINDOW_AC_AYLA_TO_HASS_MODE.get(raw_mode, raw_mode)
+
+    async def async_select_option(self, option: str) -> None:
+        if option not in WINDOW_AC_MODE_MAP:
+            return
+
+        await self._device.async_set_property_value("power", 1)
+        await self._device.async_set_property_value("mode", WINDOW_AC_MODE_MAP[option])
+        await self.coordinator.async_request_refresh()
+
+
+class WindowACFanSpeedSelect(NomaIQEntity, SelectEntity):
+    def __init__(self, coordinator, device):
+        super().__init__(coordinator, device, "Fan Speed", "fan_speed_select")
+        self._attr_options = list(WINDOW_AC_FAN_SPEED_MAP.keys())
+
+    @property
+    def current_option(self) -> str | None:
+        raw_speed = self._device.get_property_value("fan_speed")
+        return WINDOW_AC_AYLA_TO_HASS_FAN.get(raw_speed, raw_speed)
+
+    async def async_select_option(self, option: str) -> None:
+        if option not in WINDOW_AC_FAN_SPEED_MAP:
+            return
+
+        await self._device.async_set_property_value(
+            "fan_speed", WINDOW_AC_FAN_SPEED_MAP[option]
+        )
+        await self.coordinator.async_request_refresh()

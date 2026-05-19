@@ -1,20 +1,24 @@
 from __future__ import annotations
 
-import logging
+from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NomaIQDataUpdateCoordinator
 from .const import DOMAIN
+from .devices import is_dehumidifier, is_window_ac, property_exists
+from .entity import NomaIQEntity
 
-_LOGGER = logging.getLogger(__name__)
-
-SWITCH_TYPES = {
+DEHUMIDIFIER_SWITCHES = {
     "power": "Power",
+}
+
+WINDOW_AC_SWITCHES = {
+    "power": "Power",
+    "dimmer": "Display Dimmer",
 }
 
 
@@ -24,64 +28,36 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: NomaIQDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = []
+    entities: list[SwitchEntity] = []
 
-    for device in coordinator.devices_by_serial.values():
-        if device._device_model_number == "AY028MHA1":
-            for prop, name in SWITCH_TYPES.items():
-                if prop in device.property_values:
-                    entities.append(NomaIQSwitch(coordinator, device, prop, name))
+    for device in coordinator.data:
+        if is_window_ac(device):
+            switch_types = WINDOW_AC_SWITCHES
+        elif is_dehumidifier(device):
+            switch_types = DEHUMIDIFIER_SWITCHES
+        else:
+            continue
+
+        for prop, name in switch_types.items():
+            if property_exists(device, prop):
+                entities.append(NomaIQSwitch(coordinator, device, prop, name))
 
     async_add_entities(entities)
 
 
-class NomaIQSwitch(CoordinatorEntity, SwitchEntity):
-    def __init__(self, coordinator, device, prop: str, name: str):
-        super().__init__(coordinator)
-        self._device = device
-        self._dsn = device._dsn
+class NomaIQSwitch(NomaIQEntity, SwitchEntity):
+    def __init__(self, coordinator, device, prop: str, name: str) -> None:
+        super().__init__(coordinator, device, name, f"{prop}_switch")
         self._prop = prop
-        self._name = name
 
     @property
-    def name(self):
-        return f"{self._device._name} {self._name}"
-
-    @property
-    def unique_id(self):
-        return f"{self._dsn}_{self._prop}_switch"
-
-    @property
-    def is_on(self):
+    def is_on(self) -> bool:
         return bool(self._device.get_property_value(self._prop))
 
-    async def async_turn_on(self, **kwargs):
-        await self._device.async_set_property_value(self._prop, True)
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._device.async_set_property_value(self._prop, 1)
         await self.coordinator.async_request_refresh()
 
-    async def async_turn_off(self, **kwargs):
-        await self._device.async_set_property_value(self._prop, False)
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._device.async_set_property_value(self._prop, 0)
         await self.coordinator.async_request_refresh()
-
-    @property
-    def available(self):
-        return self._device is not None
-
-    def _rebind_device(self) -> None:
-        # Prefer devices_by_serial if present
-        if hasattr(self.coordinator, "devices_by_serial"):
-            dev = self.coordinator.devices_by_serial.get(self._dsn)
-            if dev:
-                self._device = dev
-                return
-
-        # Fallback to coordinator.data
-        for dev in self.coordinator.data:
-            if getattr(dev, "_dsn", None) == self._dsn:
-                self._device = dev
-                return
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        self._rebind_device()
-        self.async_write_ha_state()
