@@ -10,6 +10,34 @@ This project expands support beyond the community-maintained integration to incl
 
 ## ✨ Features
 
+### ✔ NomaIQ Window AC (win ac/ AY028MHA1)
+Supported controls and sensors:
+
+- Climate entity
+  - Off
+  - Cool
+  - Dry
+  - Fan only
+  - Target temperature
+  - Current ambient temperature
+  - Fan speed: Low / Medium / High
+  - Presets: Eco / Boost / Sleep
+- Power switch
+- Display dimmer switch
+- Mode select
+- Fan speed select
+- Filter alert
+- Sensor fault diagnostics
+- Mechanical fault diagnostics
+- Ambient temperature sensor
+- Internal coil temperature sensor, when exposed
+- Wi-Fi RSSI diagnostic sensor
+
+All values update using the Ayla Cloud API.
+
+
+---
+
 ### ✔ NomaIQ Dehumidifier (AY028MHA1)
 Full support for the common NomaIQ dehumidifier, including:
 
