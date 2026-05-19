@@ -110,6 +110,15 @@ You will need:
 - ⏱️ Polling frequency limited to avoid API rate limits.  
 - 🧪 Some devices not fully documented; testing contributions are helpful.  
 
-## Contributions
+---
 
-Contributions are welcome!
+## Credits and attribution
+
+This project is based on the community NomaIQ Home Assistant integration originally developed by:
+
+- mnfjorge/hacs-nomaiq
+- goofee76/hacs-nomaiq
+
+This fork by bodyshotz adds support for NOMA iQ window air conditioners that report as `AY028MHA1` but expose `oem_model: win-ac` and AC-specific Ayla properties.
+
+This integration is unofficial and is not affiliated with NOMA, Canadian Tire, Ayla Networks, or Home Assistant.
